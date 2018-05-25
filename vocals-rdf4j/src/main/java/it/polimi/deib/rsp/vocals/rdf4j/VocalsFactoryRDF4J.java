@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import it.polimi.rsp.vocals.core.annotations.Endpoint;
 import it.polimi.rsp.vocals.core.annotations.VocalsFactory;
+import it.polimi.rsp.vocals.core.annotations.VocalsStreamStub;
 import it.polimi.rsp.vocals.core.annotations.VocalsStub;
 import it.polimi.rsp.vocals.core.annotations.features.Feature;
 import it.polimi.rsp.vocals.core.annotations.features.Param;
@@ -14,17 +15,30 @@ import it.polimi.rsp.vocals.core.annotations.services.ProcessingService;
 import it.polimi.rsp.vocals.core.annotations.services.PublishingService;
 import lombok.extern.java.Log;
 import org.apache.commons.io.IOUtils;
-import org.eclipse.rdf4j.model.BNode;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.Resource;
-import org.eclipse.rdf4j.model.ValueFactory;
+import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
 import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
+import org.eclipse.rdf4j.query.BindingSet;
+import org.eclipse.rdf4j.query.QueryLanguage;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.repository.Repository;
+import org.eclipse.rdf4j.repository.RepositoryConnection;
+import org.eclipse.rdf4j.repository.sail.SailRepository;
+import org.eclipse.rdf4j.rio.RDFFormat;
+import org.eclipse.rdf4j.rio.RDFParser;
+import org.eclipse.rdf4j.rio.Rio;
+import org.eclipse.rdf4j.rio.helpers.StatementCollector;
+import org.eclipse.rdf4j.sail.memory.MemoryStore;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Parameter;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +48,15 @@ import java.util.List;
 public class VocalsFactoryRDF4J extends VocalsFactory {
 
     private static final ValueFactory vf = SimpleValueFactory.getInstance();
+
+    public VocalsFactoryRDF4J() throws IOException {
+        super(IOUtils.toString(VocalsFactoryRDF4J.class.getClassLoader()
+                        .getResourceAsStream("endpoints.sparql"), Charset.defaultCharset()),
+                IOUtils.toString(VocalsFactoryRDF4J
+                        .class.getClassLoader().getResourceAsStream("uri_params.sparql"), Charset.defaultCharset()),
+                IOUtils.toString(VocalsFactoryRDF4J
+                        .class.getClassLoader().getResourceAsStream("body.sparql"), Charset.defaultCharset()));
+    }
 
 
     static {
@@ -139,6 +162,55 @@ public class VocalsFactoryRDF4J extends VocalsFactory {
                         }));
 
         return new RDF4JVocalsStub(builder.build());
+    }
+
+    @Override
+    public VocalsStreamStub fetch(String uri) {
+
+        try {
+
+            String q = IOUtils.toString(VocalsFactoryRDF4J.class.getClassLoader().getResourceAsStream("sgraph.sparql"), Charset.defaultCharset());
+
+            URL url = new URL(uri);
+
+            InputStream inputStream = url.openStream();
+
+            RDFParser rdfParser = Rio.createParser(RDFFormat.JSONLD);
+
+            Model model = new LinkedHashModel();
+            rdfParser.setRDFHandler(new StatementCollector(model));
+            rdfParser.parse(inputStream, "http://www.example.org/vocals/examples#");
+
+            Repository repo = new SailRepository(new MemoryStore());
+            repo.initialize();
+
+            RepositoryConnection con = repo.getConnection();
+
+            model.forEach(con::add);
+
+            TupleQuery tq = con.prepareTupleQuery(QueryLanguage.SPARQL, q);
+
+            TupleQueryResult evaluate = tq.evaluate();
+
+            while (evaluate.hasNext()){
+                BindingSet next = evaluate.next();
+
+                String uri2 = next.getValue("stream").stringValue();
+                String publisher = next.getValue("service").stringValue();
+                String endpoint = next.getValue("endpoint").stringValue();
+                String source = next.getValue("url").stringValue();
+                String format = next.getValue("format").stringValue();
+
+                return new VocalsStreamStub(uri2, publisher, endpoint, source, format);
+
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+
     }
 
     private static IRI getEngineResource(Class<?> engine, String name, ModelBuilder model) {

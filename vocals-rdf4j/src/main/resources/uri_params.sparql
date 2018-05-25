@@ -1,0 +1,11 @@
+PREFIX vsd: <http://w3id.org/rsp/vocals-sd#>
+PREFIX vocals: <http://w3id.org/rsp/vocals#>
+
+SELECT DISTINCT ?name ?index
+WHERE  {
+    ?service vocals:feature ?feature;
+              vsd:uri_param ?uri_param .
+    ?uri_param vsd:index ?index ;
+               vsd:name ?name .
+}
+ORDER BY ?index

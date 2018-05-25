@@ -1,7 +1,7 @@
 package it.deib.tests.vocals.rdf4j;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 import it.polimi.deib.rsp.vocals.rdf4j.VocalsFactoryRDF4J;
+import it.polimi.rsp.vocals.core.annotations.VocalsStreamStub;
 import it.polimi.rsp.vocals.core.annotations.VocalsStub;
 import model.MockDouble;
 import model.MockSingles;
@@ -19,6 +19,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 
 public class TestRDF4j {
@@ -53,4 +54,22 @@ public class TestRDF4j {
         assertTrue(Models.isomorphic(mock_double, mock_singles));
     }
 
+    @Test
+    public void sgraph() throws IOException {
+
+        VocalsFactoryRDF4J  f= new VocalsFactoryRDF4J();
+
+        VocalsStreamStub fetch = f.fetch("http://localhost:4040/sgraph");
+
+        VocalsStreamStub stub = new VocalsStreamStub(
+                "http://www.example.org/vocals/stream1",
+                "http://www.example.org/vocals/Triplewave",
+                "http://www.example.org/vocals/MilanTrafficStreamEndpoint",
+                "ws://example.org/traffic/milan",
+                "http://www.w3.org/ns/formats/JSON-LD");
+
+        assertEquals(stub, fetch);
+
+
+    }
 }
