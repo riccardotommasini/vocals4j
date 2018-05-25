@@ -1,0 +1,8 @@
+PREFIX vsd: <http://w3id.org/rsp/vocals-sd#>
+
+SELECT ?id ?name ?base
+WHERE {
+
+    ?id vsd:base ?base ;
+            vsd:name ?name .
+}

@@ -3,10 +3,7 @@ package it.polimi.deib.rsp.vocals.jena;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import it.polimi.rsp.vocals.core.annotations.Endpoint;
-import it.polimi.rsp.vocals.core.annotations.HttpMethod;
-import it.polimi.rsp.vocals.core.annotations.VocalsFactory;
-import it.polimi.rsp.vocals.core.annotations.VocalsStub;
+import it.polimi.rsp.vocals.core.annotations.*;
 import it.polimi.rsp.vocals.core.annotations.features.Feature;
 import it.polimi.rsp.vocals.core.annotations.features.Param;
 import it.polimi.rsp.vocals.core.annotations.features.RSPService;
@@ -15,6 +12,7 @@ import it.polimi.rsp.vocals.core.annotations.services.ProcessingService;
 import it.polimi.rsp.vocals.core.annotations.services.PublishingService;
 import lombok.extern.java.Log;
 import org.apache.commons.io.IOUtils;
+import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.rdf.model.Resource;
@@ -23,7 +21,6 @@ import org.apache.jena.vocabulary.XSD;
 import java.io.IOException;
 import java.lang.reflect.Parameter;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -36,6 +33,15 @@ public class VocalsFactoryJena extends VocalsFactory {
         prefixMap.put("vsd", VSD.getUri());
         prefixMap.put("xsd", XSD.getURI());
         prefixMap.put("frmt", "http://www.w3.org/ns/formats/");
+    }
+
+    public VocalsFactoryJena() throws IOException {
+        super(IOUtils.toString(VocalsFactoryJena.class.getClassLoader()
+                        .getResourceAsStream("endpoints.sparql"), Charset.defaultCharset()),
+                IOUtils.toString(VocalsFactoryJena
+                        .class.getClassLoader().getResourceAsStream("uri_params.sparql"), Charset.defaultCharset()),
+                IOUtils.toString(VocalsFactoryJena
+                        .class.getClassLoader().getResourceAsStream("body.sparql"), Charset.defaultCharset()));
     }
 
 
@@ -127,6 +133,35 @@ public class VocalsFactoryJena extends VocalsFactory {
                         }));
 
         return new JenaVocalsStub(model);
+    }
+
+    @Override
+    public VocalsStreamStub fetch(String uri) {
+        try {
+            Model sgraph = ModelFactory.createDefaultModel().read(uri, "JSON-LD");
+            String q = IOUtils.toString(VocalsFactoryJena.class.getClassLoader().getResourceAsStream("sgraph.sparql"), Charset.defaultCharset());
+            Query query = QueryFactory.create(q);
+            ResultSet resultSet = QueryExecutionFactory.create(query, sgraph).execSelect();
+
+            while (resultSet.hasNext()) {
+
+                QuerySolution next = resultSet.next();
+
+                String uri2 = next.get("?stream").toString();
+                String publisher = next.get("?service").toString();
+                String endpoint = next.get("?endpoint").toString();
+                String source = next.get("?url").toString();
+                String format = next.get("?format").toString();
+
+                return new VocalsStreamStub(uri2, publisher, endpoint, source, format);
+
+            }
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private static void createDeleteEndpoint(Model m, Resource e, String name, String endpt, String key) {
@@ -231,19 +266,8 @@ public class VocalsFactoryJena extends VocalsFactory {
     }
 
     public List<Endpoint> fromVocals(VocalsStub stub) {
-        try {
-
-            String qstring = IOUtils.toString(VocalsFactoryJena.class.getClassLoader().getResourceAsStream("endpoints.sparql"), Charset.defaultCharset());
-            String uri_query = IOUtils.toString(VocalsFactoryJena.class.getClassLoader().getResourceAsStream("uri_params.sparql"), Charset.defaultCharset());
-            String body_query = IOUtils.toString(VocalsFactoryJena.class.getClassLoader().getResourceAsStream("body.sparql"), Charset.defaultCharset());
-
-            stub.setQueries(qstring, uri_query, body_query);
-
-            return stub.parse();
-
-        } catch (IOException e) {
-            return new ArrayList<>();
-        }
+        stub.setQueries(qstring, uri_query, body_query);
+        return stub.parse();
     }
 
 

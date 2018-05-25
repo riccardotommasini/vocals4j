@@ -1,0 +1,17 @@
+PREFIX vsd: <http://w3id.org/rsp/vocals-sd#>
+PREFIX vocals: <http://w3id.org/rsp/vocals#>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+
+SELECT *
+WHERE {
+
+    ?stream a vocals:RDFStream ;
+              vocals:hasEndpoint ?endpoint .
+
+    ?endpoint dcat:accessURL ?url ;
+              dcat:format ?format ;
+              vsd:publishedBy ?service .
+
+
+
+}
