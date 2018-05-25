@@ -19,7 +19,7 @@ public abstract class VocalsFactory {
     }
 
 
-    public abstract VocalsStub toVocals(final Class<?> engine);
+    public abstract VocalsStub toVocals(final Class<?> engine, final String name);
 
     public abstract List<Endpoint> fromVocals(VocalsStub descr);
 

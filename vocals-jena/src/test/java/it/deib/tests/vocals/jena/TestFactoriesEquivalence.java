@@ -22,14 +22,14 @@ public class TestFactoriesEquivalence {
 
         VocalsFactoryJena factory = new VocalsFactoryJena();
 
-        String mock1 = get().toVocals(MockDouble.class).toJsonLD();
+        String mock1 = get().toVocals(MockDouble.class, "mock").toJsonLD();
         System.out.println(mock1);
         Model mock_double = ModelFactory.createDefaultModel()
                 .read(new ByteArrayInputStream(
-                        mock1.getBytes(StandardCharsets.UTF_8)), "JSON-LD");
+                        mock1.getBytes(StandardCharsets.UTF_8)), "", "JSON-LD");
         Model mock_singles = ModelFactory.createDefaultModel()
                 .read(new ByteArrayInputStream(
-                        get().toVocals(MockSingles.class).toJsonLD().getBytes()), "JSON-LD");
+                        get().toVocals(MockSingles.class, "mock").toJsonLD().getBytes()), "", "JSON-LD");
 
         RDFDataMgr.write(System.out, mock_double, RDFFormat.JSONLD_COMPACT_PRETTY);
         RDFDataMgr.write(System.out, mock_singles, RDFFormat.JSONLD_COMPACT_PRETTY);

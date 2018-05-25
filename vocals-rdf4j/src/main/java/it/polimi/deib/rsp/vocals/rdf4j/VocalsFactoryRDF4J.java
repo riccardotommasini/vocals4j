@@ -26,7 +26,9 @@ import org.eclipse.rdf4j.model.vocabulary.XMLSchema;
 import java.io.IOException;
 import java.lang.reflect.Parameter;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Log
 public class VocalsFactoryRDF4J extends VocalsFactory {
@@ -43,16 +45,14 @@ public class VocalsFactoryRDF4J extends VocalsFactory {
         prefixMap.put("frmt", "http://www.w3.org/ns/formats/");
     }
 
-    public VocalsStub toVocals(final Class<?> engine) {
+    public VocalsStub toVocals(final Class<?> engine, String name) {
         ModelBuilder builder = new ModelBuilder();
 
         prefixMap.entrySet().stream().forEach(e -> builder.setNamespace(e.getKey(), e.getValue()));
 
-        IRI e = getEngineResource(engine, builder);
+        IRI e = getEngineResource(engine, name, builder);
 
-        String engine_base = e.getNamespace();
-
-        Random random = new Random(0);
+        String engine_base = e.toString();
 
         Class<?>[] interfaces = engine.getInterfaces();
         Arrays.stream(interfaces)
@@ -113,7 +113,7 @@ public class VocalsFactoryRDF4J extends VocalsFactory {
 
                                         Resource t = !entry.getValue().isJsonArray() ?
                                                 vf.createIRI(entry.getValue().getAsString()) :
-                                                vf.createIRI("array");
+                                                vf.createIRI(XMLSchema.NAMESPACE + "#sequence");
 
                                         builder.add(bp, RDF.TYPE, t);
                                         builder.add(bp, VSD.index, p.getName().replace("arg", ""));
@@ -141,30 +141,28 @@ public class VocalsFactoryRDF4J extends VocalsFactory {
         return new RDF4JVocalsStub(builder.build());
     }
 
-    private static IRI getEngineResource(Class<?> engine, ModelBuilder model) {
+    private static IRI getEngineResource(Class<?> engine, String name, ModelBuilder model) {
         String uri = "";
-        IRI e = null;
         IRI service = null;
         if (engine.isAnnotationPresent(PublishingService.class)) {
             PublishingService cat = engine.getAnnotation(PublishingService.class);
             uri = "http://" + cat.host() + ":" + cat.port();
-            e = vf.createIRI(uri.replace("\\", ""));
             service = VSD.PublishingService;
 
         } else if (engine.isAnnotationPresent(ProcessingService.class)) {
             ProcessingService cat = engine.getAnnotation(ProcessingService.class);
             uri = "http://" + cat.host() + ":" + cat.port();
-            e = vf.createIRI(uri.replace("\\", ""));
             service = VSD.ProcessingService;
 
         }
         if (engine.isAnnotationPresent(Catalog.class)) {
             Catalog cat = engine.getAnnotation(Catalog.class);
-            e = vf.createIRI(uri.replace("\\", ""));
+            uri = "http://" + cat.host() + ":" + cat.port();
             service = VSD.CatalogService;
 
         }
 
+        IRI e = vf.createIRI(uri.replace("\\", "") + "/" + name);
         model.defaultGraph().subject(e)
                 .add(RDF.TYPE, service)
                 .add(VSD.base, uri);

@@ -39,10 +39,10 @@ public class VocalsFactoryJena extends VocalsFactory {
     }
 
 
-    public VocalsStub toVocals(final Class<?> engine) {
+    public VocalsStub toVocals(final Class<?> engine, String name) {
         Model model = ModelFactory.createDefaultModel();
         model.setNsPrefixes(prefixMap);
-        Resource e = getEngineResource(engine, model);
+        Resource e = getEngineResource(engine, name, model);
 
         String engine_base = e.getNameSpace();
 
@@ -159,31 +159,31 @@ public class VocalsFactoryJena extends VocalsFactory {
     }
 
 
-    private static Resource getEngineResource(Class<?> engine, Model model) {
+    private static Resource getEngineResource(Class<?> engine, String name, Model model) {
         String uri = "";
+        Resource service = null;
         if (engine.isAnnotationPresent(PublishingService.class)) {
             PublishingService cat = engine.getAnnotation(PublishingService.class);
-            uri = "http://" + cat.host() + ":" + cat.port();
-            return model.createResource(uri.replace("\\", ""))
-                    .addProperty(org.apache.jena.vocabulary.RDF.type, VSD.PublishingService)
-                    .addProperty(VSD.base, uri);
+            uri = ("http://" + cat.host() + ":" + cat.port()).replace("\\", "") + "/" + name;
+            service = VSD.PublishingService;
 
         } else if (engine.isAnnotationPresent(ProcessingService.class)) {
             ProcessingService cat = engine.getAnnotation(ProcessingService.class);
-            uri = "http://" + cat.host() + ":" + cat.port();
-            return model.createResource(uri.replace("\\", ""))
-                    .addProperty(org.apache.jena.vocabulary.RDF.type, VSD.ProcessingService)
-                    .addProperty(VSD.base, uri);
-        }
-        if (engine.isAnnotationPresent(Catalog.class)) {
+            uri = ("http://" + cat.host() + ":" + cat.port()).replace("\\", "") + "/" + name;
+            service = VSD.ProcessingService;
+        } else if (engine.isAnnotationPresent(Catalog.class)) {
             Catalog cat = engine.getAnnotation(Catalog.class);
-            uri = "http://" + cat.host() + ":" + cat.port();
-            return model.createResource(uri.replace("\\", ""))
-                    .addProperty(org.apache.jena.vocabulary.RDF.type, VSD.CatalogService)
-                    .addProperty(VSD.base, uri);
+            uri = ("http://" + cat.host() + ":" + cat.port()).replace("\\", "") + "/" + name;
+            service = VSD.CatalogService;
+
+        } else {
+            return model.createResource();
         }
 
-        return model.createResource();
+        return model.createResource(uri)
+                .addProperty(org.apache.jena.vocabulary.RDF.type, service)
+                .addProperty(VSD.base, uri);
+
     }
 
     public static JsonElement serialize(Param param, Class<?> c) {

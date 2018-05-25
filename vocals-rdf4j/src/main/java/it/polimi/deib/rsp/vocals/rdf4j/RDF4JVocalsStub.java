@@ -116,7 +116,7 @@ public class RDF4JVocalsStub implements VocalsStub {
             while (param.hasNext()) {
                 BindingSet next = param.next();
                 String name = next.getValue("name").stringValue().replace("\\", "");
-                int index = Integer.parseInt(next.getValue("?index").stringValue());
+                int index = Integer.parseInt(next.getValue("index").stringValue());
                 log.info(name);
                 params.add(new Endpoint.Par(name, index, false));
             }
@@ -126,7 +126,7 @@ public class RDF4JVocalsStub implements VocalsStub {
 
             String features = "";
             if (s.hasBinding("feature")) {
-                features = s.getValue("?feature").stringValue();
+                features = s.getValue("feature").stringValue();
             } else if (s.hasBinding("method") && "GET".equals(s.getValue("method").stringValue())) {
                 features = params.size() > 1 ? ":GetterFeatureN" : ":GetterFeature" + params.size();
             }
