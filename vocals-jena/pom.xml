@@ -26,9 +26,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>it.deib.rsp.vocals</groupId>
+            <groupId>it.polimi.deib.rsp.vocals</groupId>
             <artifactId>vocals-core</artifactId>
-            <version>1.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.jena</groupId>
