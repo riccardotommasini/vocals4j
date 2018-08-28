@@ -21,6 +21,7 @@ import org.apache.jena.vocabulary.XSD;
 import java.io.IOException;
 import java.lang.reflect.Parameter;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -266,8 +267,16 @@ public class VocalsFactoryJena extends VocalsFactory {
     }
 
     public List<Endpoint> fromVocals(VocalsStub stub) {
-        stub.setQueries(qstring, uri_query, body_query);
-        return stub.parse();
+        try {
+            String qstring = IOUtils.toString(VocalsFactoryJena.class.getClassLoader().getResourceAsStream("endpoints.sparql"), Charset.defaultCharset());
+            String uri_query = IOUtils.toString(VocalsFactoryJena.class.getClassLoader().getResourceAsStream("uri_params.sparql"), Charset.defaultCharset());
+            String body_query = IOUtils.toString(VocalsFactoryJena.class.getClassLoader().getResourceAsStream("body.sparql"), Charset.defaultCharset());
+
+            stub.setQueries(qstring, uri_query, body_query);
+            return stub.parse();
+        } catch (IOException e) {
+            return new ArrayList<>();
+        }
     }
 
 

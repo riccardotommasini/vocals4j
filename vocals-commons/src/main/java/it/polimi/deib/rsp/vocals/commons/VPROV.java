@@ -1,4 +1,4 @@
-package it.deib.rsp.vocals.commons;
+package it.polimi.deib.rsp.vocals.commons;
 
 import org.apache.commons.rdf.api.IRI;
 
